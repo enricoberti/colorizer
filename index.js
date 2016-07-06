@@ -48,6 +48,11 @@ function rgbToHex(obj) {
 
 console.log('Welcome to colorizer!'.rainbow);
 
+try {
+  fs.unlinkSync('result.html');
+}
+catch (e){}
+
 var args = process.argv.slice(2);
 if (args.length == 0) {
   console.log('Usage: node index.js PATH_TO_YOUR_FOLDER [--preview]')
@@ -106,6 +111,11 @@ else {
             }
             var near = nearestColor(matches[0]);
             var nearest = colorDiff.closest(hexToRgb(matches[0]), lessColorsPalette);
+
+            var table = "<table width='600' style='margin-top: 5px'><tr><td width='200' style='background-color: "+matches[0]+"; height: 30px'></td><td width='200' style='background-color: "+near.value+"; height: 30px'></td><td width='200' style='background-color: "+rgbToHex(nearest)+"; height: 30px'></td></tr>"
+            fs.appendFile('result.html', table, function (err) {
+
+            });
             console.log('\t', matches[0].red, '=>', near.value.magenta, near.name.green);
             console.log('\t', matches[0].red, '=>', rgbToHex(nearest).blue);
             console.log('--')
