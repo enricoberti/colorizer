@@ -14,6 +14,7 @@ require('colors');
 var fs = require('fs');
 var hexColorRegex = require('hex-color-regex')
 var path = require('path');
+var colorDiff = require('color-diff');
 
 function getLessDeclarations(input) {
   return input.match(/@[\w-_]+:\s*.*;[\/.]*/gm);
@@ -24,6 +25,25 @@ function mapLessDeclaration(declaration) {
     key = parts.shift(),
     value = parts.join(':').replace(/^\s+|;$/gm, '');
   return [key, value];
+}
+
+function hexToRgb(hex) {
+  // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+  var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+    return r + r + g + g + b + b;
+  });
+
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    R: parseInt(result[1], 16),
+    G: parseInt(result[2], 16),
+    B: parseInt(result[3], 16)
+  } : null;
+}
+
+function rgbToHex(obj) {
+  return "#" + ((1 << 24) + (obj.R << 16) + (obj.G << 8) + obj.B).toString(16).toUpperCase().slice(1);
 }
 
 console.log('Welcome to colorizer!'.rainbow);
@@ -38,6 +58,7 @@ else {
   var text = fs.readFileSync('colors.less', 'utf8');
   var lessColorDeclarations = getLessDeclarations(text);
   var lessColors = {};
+  var lessColorsPalette = [];
 
   if (lessColorDeclarations) {
 
@@ -45,6 +66,7 @@ else {
 
     lessColorDeclarations.forEach(function (color) {
       var c = mapLessDeclaration(color);
+      lessColorsPalette.push(hexToRgb(c[1]));
       lessColors[c[0]] = c[1];
     });
     var nearestColor = require('nearest-color').from(lessColors);
@@ -83,7 +105,10 @@ else {
               re.lastIndex++;
             }
             var near = nearestColor(matches[0]);
-            console.log('\t', matches[0].red, '=>', near.name.green, near.value.magenta);
+            var nearest = colorDiff.closest(hexToRgb(matches[0]), lessColorsPalette);
+            console.log('\t', matches[0].red, '=>', near.value.magenta, near.name.green);
+            console.log('\t', matches[0].red, '=>', rgbToHex(nearest).blue);
+            console.log('--')
           }
           if (args[1] == null || args[1] !== '--preview'){
             var result = data.replace(hexColorRegex(), function($1){ return nearestColor($1).value; });
