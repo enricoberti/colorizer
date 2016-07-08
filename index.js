@@ -121,7 +121,7 @@ else {
             console.log('--')
           }
           if (args[1] == null || args[1] !== '--preview'){
-            var result = data.replace(hexColorRegex(), function($1){ return nearestColor($1).value; });
+            var result = data.replace(hexColorRegex(), function($1){ return rgbToHex(colorDiff.closest(hexToRgb($1), lessColorsPalette)); });
             fs.writeFile(file, result, 'utf8', function(err) {
               if (err) {
                 return console.log(err);
