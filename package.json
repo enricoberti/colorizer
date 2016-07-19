@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/enricoberti/colorizer#readme",
   "dependencies": {
+    "color-diff": "^1.0.0",
     "colors": "^1.1.2",
     "findit": "^2.0.0",
-    "hex-color-regex": "^1.0.3",
-    "nearest-color": "^0.4.0"
+    "hex-color-regex": "^1.0.3"
   }
 }

@@ -13,7 +13,8 @@ var FORCE_SKIPPED_EXTENSIONS = [
 var consoleColors = require('colors'),
   fs = require('fs'),
   hexColorRegex = require('hex-color-regex'),
-  path = require('path');
+  path = require('path'),
+  colorDiff = require('color-diff');
 
 function getLessDeclarations(input) {
   return input.match(/@[\w-_]+:\s*.*;[\/.]*/gm);
@@ -32,6 +33,20 @@ function fillShorthand(hex){
     return r + r + g + g + b + b;
   });
   return hex;
+}
+
+function hexToRgb(hex) {
+  hex = fillShorthand(hex);
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    R: parseInt(result[1], 16),
+    G: parseInt(result[2], 16),
+    B: parseInt(result[3], 16)
+  } : null;
+}
+
+function rgbToHex(obj) {
+  return "#" + ((1 << 24) + (obj.R << 16) + (obj.G << 8) + obj.B).toString(16).toUpperCase().slice(1);
 }
 
 function getContrastYIQ(hex) {
@@ -63,20 +78,32 @@ else {
   var text = fs.readFileSync('colors.less', 'utf8');
 
   var lessColorDeclarations = getLessDeclarations(text);
-  var lessColorsForNearestLibrary = {};
+  var lessColorsPalette = [];
+  var lessColorsDeclarative = {};
 
   if (lessColorDeclarations) {
     console.log(('Loaded ' + lessColorDeclarations.length + ' color variables').green);
 
     lessColorDeclarations.forEach(function (color) {
       var c = mapLessDeclaration(color);
-      lessColorsForNearestLibrary[c[0]] = c[1];
+      lessColorsPalette.push(hexToRgb(c[1]));
+      lessColorsDeclarative[c[0]] = c[1];
     });
-    var nearestColor = require('nearest-color').from(lessColorsForNearestLibrary);
+
+    function getVariableFromValue(val) {
+      for (var key in lessColorsDeclarative) {
+        if (lessColorsDeclarative.hasOwnProperty(key)) {
+          if (lessColorsDeclarative[key] === val){
+            return key;
+          }
+        }
+      }
+      return 'Not found.';
+    }
 
     if (args[0].indexOf('#') == 0){
-      var nearest = nearestColor('#' + fillShorthand(args[0].substr(1)));
-      console.log('\t', args[0].red, '=>', nearest.value.magenta, nearest.name.green);
+      var nearest = colorDiff.closest(hexToRgb('#' + fillShorthand(args[0].substr(1))), lessColorsPalette);
+      console.log('\t', args[0].red, '=>', rgbToHex(nearest).magenta, getVariableFromValue(rgbToHex(nearest)).green);
     }
 
     else {
@@ -113,17 +140,18 @@ else {
               if (matches.index === re.lastIndex) {
                 re.lastIndex++;
               }
-              var nearest = nearestColor(matches[0]);
+              var nearest = colorDiff.closest(hexToRgb(matches[0]), lessColorsPalette);
 
-              var table = "<table width='600' style='margin-top: 5px'><tr><td width='200' style='font-family: monospace; text-align: center; background-color: " + matches[0] + "; color: " + getContrastYIQ(matches[0].substr(1)) + "; height: 30px'>" + matches[0] + "</td><td width='200' style='font-family: monospace; text-align: center; background-color: " + nearest.value + "; color: " + getContrastYIQ(nearest.value.substr(1)) + "; height: 30px'>" + nearest.name + "</td></tr>"
+              var table = "<table width='600' style='margin-top: 5px'><tr><td width='200' style='font-family: monospace; text-align: center; background-color: " + matches[0] + "; color: " + getContrastYIQ(matches[0].substr(1)) + "; height: 30px'>" + matches[0] + "</td><td width='200' style='font-family: monospace; text-align: center; background-color: " + rgbToHex(nearest) + "; color: " + getContrastYIQ(rgbToHex(nearest).substr(1)) + "; height: 30px'>" + getVariableFromValue(nearest) + "</td></tr>"
               fs.appendFile('result.html', table, function (err) {
               });
-              console.log('\t', matches[0].red, '=>', nearest.value.magenta, nearest.name.green);
+              console.log('\t', matches[0].red, '=>', rgbToHex(nearest).magenta, getVariableFromValue(rgbToHex(nearest)).green);
               console.log('--')
             }
             if (args[1] == null || args[1] !== '--preview') {
               var result = data.replace(hexColorRegex(), function ($1) {
-                return path.extname(file) === '.less' ? nearestColor($1).name : nearestColor($1).value;
+                var nearest = colorDiff.closest(hexToRgb($1), lessColorsPalette);
+                return path.extname(file) === '.less' ? getVariableFromValue(rgbToHex(nearest)) : rgbToHex(nearest);
               });
               fs.writeFile(file, result, 'utf8', function (err) {
                 if (err) {
