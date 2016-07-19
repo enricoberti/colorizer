@@ -142,7 +142,7 @@ else {
               }
               var nearest = colorDiff.closest(hexToRgb(matches[0]), lessColorsPalette);
 
-              var table = "<table width='600' style='margin-top: 5px'><tr><td width='200' style='font-family: monospace; text-align: center; background-color: " + matches[0] + "; color: " + getContrastYIQ(matches[0].substr(1)) + "; height: 30px'>" + matches[0] + "</td><td width='200' style='font-family: monospace; text-align: center; background-color: " + rgbToHex(nearest) + "; color: " + getContrastYIQ(rgbToHex(nearest).substr(1)) + "; height: 30px'>" + getVariableFromValue(nearest) + "</td></tr>"
+              var table = "<table width='600' style='margin-top: 5px'><tr><td width='200' style='font-family: monospace; text-align: center; background-color: " + matches[0] + "; color: " + getContrastYIQ(matches[0].substr(1)) + "; height: 30px'>" + matches[0] + "</td><td width='200' style='font-family: monospace; text-align: center; background-color: " + rgbToHex(nearest) + "; color: " + getContrastYIQ(rgbToHex(nearest).substr(1)) + "; height: 30px'>" + getVariableFromValue(rgbToHex(nearest)) + "</td></tr>"
               fs.appendFile('result.html', table, function (err) {
               });
               console.log('\t', matches[0].red, '=>', rgbToHex(nearest).magenta, getVariableFromValue(rgbToHex(nearest)).green);
